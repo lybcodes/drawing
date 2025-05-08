@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽奖系统管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .logout {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .panel {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: #343a40;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #0069d9;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .draw-area {
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .participant-list {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .participant-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-area {
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 200px;
+            margin-top: 20px;
+        }
+        
+        .winner {
+            font-size: 24px;
+            color: #dc3545;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .winner-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .draw-animation {
+            font-size: 36px;
+            color: #007bff;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .action-buttons {
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid #007bff;
+            color: #007bff;
+        }
+        
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>抽奖系统管理平台</h1>
+        <a href="/logout" class="logout">退出登录</a>
+    </div>
+    
+    <div class="container">
+        <div class="tab-container">
+            <div class="tab active" data-tab="draw">抽奖管理</div>
+            <div class="tab" data-tab="history">中奖历史</div>
+        </div>
+        
+        <!-- 抽奖页面 -->
+        <div id="draw-panel" class="tab-panel active">
+            <div class="panel">
+                <h2>筛选参与者</h2>
+                <div class="form-group">
+                    <label for="start-time">开始时间</label>
+                    <input type="datetime-local" id="start-time">
+                </div>
+                
+                <div class="form-group">
+                    <label for="end-time">结束时间</label>
+                    <input type="datetime-local" id="end-time">
+                </div>
+                
+                <div class="form-group">
+                    <label for="draw-count">抽奖人数</label>
+                    <input type="number" id="draw-count" min="1" value="1">
+                </div>
+                
+                <button id="filter-btn">筛选符合条件的参与者</button>
+            </div>
+            
+            <div class="panel">
+                <h2>符合条件的参与者</h2>
+                <div id="participant-list" class="participant-list">
+                    <!-- 这里将动态展示符合条件的参与者 -->
+                </div>
+                
+                <div class="draw-area">
+                    <div id="draw-animation" class="draw-animation">
+                        准备开始抽奖...
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="start-btn" class="btn-success">开始抽奖</button>
+                        <button id="stop-btn" class="btn-danger" disabled>停止抽奖</button>
+                    </div>
+                </div>
+                
+                <h2>本次中奖名单</h2>
+                <div id="result-area" class="result-area">
+                    <!-- 这里将展示抽奖结果 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中奖历史页面 -->
+        <div id="history-panel" class="tab-panel">
+            <div class="panel">
+                <h2>查询中奖历史</h2>
+                <div class="form-group">
+                    <label for="history-start-time">开始时间</label>
+                    <input type="datetime-local" id="history-start-time">
+                </div>
+                
+                <div class="form-group">
+                    <label for="history-end-time">结束时间</label>
+                    <input type="datetime-local" id="history-end-time">
+                </div>
+                
+                <button id="search-history-btn">查询</button>
+            </div>
+            
+            <div class="panel">
+                <h2>中奖记录</h2>
+                <table id="winners-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>姓名</th>
+                            <th>手机号</th>
+                            <th>中奖时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 这里将动态展示中奖记录 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 选项卡切换
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有活动状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                    
+                    // 添加当前活动状态
+                    this.classList.add('active');
+                    
+                    // 显示对应的面板
+                    const panelId = this.getAttribute('data-tab') + '-panel';
+                    document.getElementById(panelId).classList.add('active');
+                });
+            });
+            
+            // 筛选参与者
+            document.getElementById('filter-btn').addEventListener('click', filterParticipants);
+            
+            // 抽奖控制
+            document.getElementById('start-btn').addEventListener('click', startDraw);
+            document.getElementById('stop-btn').addEventListener('click', stopDraw);
+            
+            // 查询历史记录
+            document.getElementById('search-history-btn').addEventListener('click', searchHistory);
+            
+            // 设置默认的时间范围为当天
+            setDefaultTimeRange();
+        });
+        
+        // 设置默认时间范围
+        function setDefaultTimeRange() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // 格式化为 ISO 字符串并截取适合 datetime-local 的部分
+            const todayStr = today.toISOString().slice(0, 16);
+            const tomorrowStr = tomorrow.toISOString().slice(0, 16);
+            
+            // 设置筛选时间
+            document.getElementById('start-time').value = todayStr;
+            document.getElementById('end-time').value = tomorrowStr;
+            
+            // 设置历史查询时间
+            document.getElementById('history-start-time').value = todayStr;
+            document.getElementById('history-end-time').value = tomorrowStr;
+        }
+        
+        // 筛选参与者
+        function filterParticipants() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (!startTime || !endTime) {
+                alert('请选择开始和结束时间');
+                return;
+            }
+            
+            // 发送请求获取符合条件的参与者
+            fetch(`/api/participants?startTime=${startTime}:00.000Z&endTime=${endTime}:00.000Z`)
+                .then(response => response.json())
+                .then(data => {
+                    displayParticipants(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取参与者数据失败');
+                });
+        }
+        
+        // 显示参与者列表
+        function displayParticipants(participants) {
+            const listElement = document.getElementById('participant-list');
+            listElement.innerHTML = '';
+            
+            if (participants.length === 0) {
+                listElement.innerHTML = '<p>没有符合条件的参与者</p>';
+                return;
+            }
+            
+            participants.forEach((participant, index) => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.textContent = `${index + 1}. ${participant.name} - ${maskPhone(participant.phone)}`;
+                listElement.appendChild(item);
+            });
+            
+            // 启用开始抽奖按钮
+            document.getElementById('start-btn').disabled = false;
+        }
+        
+        // 手机号码脱敏
+        function maskPhone(phone) {
+            if (!phone) return '';
+            return phone.substr(0, 3) + '****' + phone.substr(7);
+        }
+        
+        let drawInterval;
+        let currentParticipants = [];
+        
+        // 开始抽奖
+        function startDraw() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (!startTime || !endTime) {
+                alert('请选择开始和结束时间');
+                return;
+            }
+            
+            // 获取符合条件的参与者
+            fetch(`/api/participants?startTime=${startTime}:00.000Z&endTime=${endTime}:00.000Z`)
+                .then(response => response.json())
+                .then(data => {
+                    currentParticipants = data;
+                    
+                    if (currentParticipants.length === 0) {
+                        alert('没有符合条件的参与者');
+                        return;
+                    }
+                    
+                    // 禁用开始按钮，启用停止按钮
+                    document.getElementById('start-btn').disabled = true;
+                    document.getElementById('stop-btn').disabled = false;
+                    
+                    // 清空结果区域
+                    document.getElementById('result-area').innerHTML = '';
+                    
+                    // 开始滚动动画
+                    let index = 0;
+                    const drawAnimation = document.getElementById('draw-animation');
+                    
+                    drawInterval = setInterval(() => {
+                        if (index >= currentParticipants.length) {
+                            index = 0;
+                        }
+                        
+                        const participant = currentParticipants[index];
+                        drawAnimation.textContent = `${participant.name} - ${maskPhone(participant.phone)}`;
+                        index++;
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取参与者数据失败');
+                });
+        }
+        
+        // 停止抽奖
+        function stopDraw() {
+            clearInterval(drawInterval);
+            
+            // 禁用停止按钮，启用开始按钮
+            document.getElementById('stop-btn').disabled = true;
+            document.getElementById('start-btn').disabled = false;
+            
+            const count = parseInt(document.getElementById('draw-count').value, 10) || 1;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            // 发送抽奖请求
+            fetch(`/api/draw?count=${count}&startTime=${startTime}:00.000Z&endTime=${endTime}:00.000Z`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(winners => {
+                displayWinners(winners);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('抽奖失败，请重试');
+            });
+            
+            // 重置动画文本
+            document.getElementById('draw-animation').textContent = '抽奖完成';
+        }
+        
+        // 显示中奖者
+        function displayWinners(winners) {
+            const resultArea = document.getElementById('result-area');
+            resultArea.innerHTML = '';
+            
+            if (winners.length === 0) {
+                resultArea.innerHTML = '<p>没有中奖者</p>';
+                return;
+            }
+            
+            winners.forEach((winner, index) => {
+                const item = document.createElement('div');
+                item.className = 'winner';
+                item.textContent = `${index + 1}. ${winner.name} - ${maskPhone(winner.phone)}`;
+                resultArea.appendChild(item);
+            });
+        }
+        
+        // 查询历史记录
+        function searchHistory() {
+            const startTime = document.getElementById('history-start-time').value;
+            const endTime = document.getElementById('history-end-time').value;
+            
+            if (!startTime || !endTime) {
+                alert('请选择开始和结束时间');
+                return;
+            }
+            
+            // 发送请求获取历史中奖记录
+            fetch(`/api/winners/range?startTime=${startTime}:00.000Z&endTime=${endTime}:00.000Z`)
+                .then(response => response.json())
+                .then(data => {
+                    displayWinnerHistory(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取历史记录失败');
+                });
+        }
+        
+        // 显示历史中奖记录
+        function displayWinnerHistory(winners) {
+            const tableBody = document.querySelector('#winners-table tbody');
+            tableBody.innerHTML = '';
+            
+            if (winners.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4" style="text-align: center;">暂无中奖记录</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            winners.forEach((winner, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${winner.name}</td>
+                    <td>${maskPhone(winner.phone)}</td>
+                    <td>${formatDateTime(winner.winTime)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 格式化日期时间
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+    </script>
+</body>
+</html> 
