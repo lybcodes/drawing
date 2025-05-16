@@ -140,7 +140,10 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    // 将错误响应解析为JSON
+                    return response.json().then(err => {
+                        throw new Error(err.message || '提交失败，请稍后重试');
+                    });
                 }
                 return response.json();
             })
@@ -150,7 +153,8 @@
                 document.getElementById('success-message').style.display = 'block';
             })
             .catch(error => {
-                showError('提交失败，请稍后重试');
+                // 显示错误消息 - 这里会捕获到自定义错误信息
+                showError(error.message);
                 console.error('Error:', error);
             });
         });

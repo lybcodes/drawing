@@ -23,4 +23,10 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     List<Participant> findWinnersByTimeRange(
             @Param("startTime") LocalDateTime startTime, 
             @Param("endTime") LocalDateTime endTime);
+    
+    @Query("SELECT COUNT(p) > 0 FROM Participant p WHERE p.phone = :phone AND p.createTime >= :startOfDay AND p.createTime <= :endOfDay")
+    boolean existsByPhoneAndCreatedToday(
+            @Param("phone") String phone,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay);
 } 

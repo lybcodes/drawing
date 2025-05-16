@@ -6,9 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,6 +23,17 @@ public class DrawServiceImpl implements DrawService {
     
     @Override
     public Participant registerParticipant(String name, String phone) {
+        // 检查今天是否已经用该手机号注册过
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+        
+        boolean alreadyRegisteredToday = participantRepository.existsByPhoneAndCreatedToday(phone, startOfDay, endOfDay);
+        
+        if (alreadyRegisteredToday) {
+            throw new IllegalStateException("该手机号今天已经报名，请明天再来");
+        }
+        
         Participant participant = new Participant();
         participant.setName(name);
         participant.setPhone(phone);
@@ -59,14 +74,31 @@ public class DrawServiceImpl implements DrawService {
         // 随机抽取指定数量的中奖者
         List<Participant> winners = new ArrayList<>();
         if (!eligibleParticipants.isEmpty()) {
+            // 洗牌
             Collections.shuffle(eligibleParticipants);
-            // 抽取不超过指定数量的中奖者
+            
+            // 抽取不超过指定数量的中奖者，确保本次抽奖中不会有重复的手机号
             int actualCount = Math.min(count, eligibleParticipants.size());
-            for (int i = 0; i < actualCount; i++) {
-                Participant winner = eligibleParticipants.get(i);
-                winner.setHasWon(true);
-                winner.setWinTime(LocalDateTime.now());
-                winners.add(participantRepository.save(winner));
+            Set<String> currentDrawPhones = new HashSet<>();
+            
+            int i = 0;
+            int processed = 0;
+            
+            while (winners.size() < actualCount && processed < eligibleParticipants.size()) {
+                Participant candidate = eligibleParticipants.get(i);
+                i = (i + 1) % eligibleParticipants.size(); // 循环遍历
+                processed++;
+                
+                // 如果当前抽奖中已经有相同手机号的用户中奖，则跳过
+                if (currentDrawPhones.contains(candidate.getPhone())) {
+                    continue;
+                }
+                
+                // 标记为中奖并保存
+                candidate.setHasWon(true);
+                candidate.setWinTime(LocalDateTime.now());
+                winners.add(participantRepository.save(candidate));
+                currentDrawPhones.add(candidate.getPhone());
             }
         }
         
